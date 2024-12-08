@@ -2,27 +2,67 @@
   description = "flask-example";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/release-22.11";
+    # https://github.com/NixOS/nixpkgs to see latest release
     flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:nixos/nixpkgs/release-24.05";
+    poetry2nix = {
+      url = "github:nix-community/poetry2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    #flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, poetry2nix }:
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = import nixpkgs { inherit system; };
-      in with pkgs; rec {
-        # Development environment
-        devShell = mkShell {
-          name = "flask-example";
-          nativeBuildInputs = [ python3 poetry ];
+      let
+        # see https://github.com/nix-community/poetry2nix/tree/master#api for more functions and examples.
+        myapp = { poetry2nix, lib }: poetry2nix.mkPoetryApplication {
+          projectDir = self;
+          overrides = poetry2nix.overrides.withDefaults (final: super:
+            lib.mapAttrs
+              (attr: systems: super.${attr}.overridePythonAttrs
+                (old: {
+                  nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ map (a: final.${a}) systems;
+                }))
+              {
+                # https://github.com/nix-community/poetry2nix/blob/master/docs/edgecases.md#modulenotfounderror-no-module-named-packagename
+                # package = [ "setuptools" ];
+              }
+          );
         };
-
-        # Runtime package
-        packages.app = poetry2nix.mkPoetryApplication {
-          projectDir = ./.;
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            poetry2nix.overlays.default
+            (final: _: {
+              myapp = final.callPackage myapp { };
+            })
+          ];
         };
+      in
+      {
+        packages.default = pkgs.myapp;
+        devShells = {
+          # Shell for app dependencies.
+          #
+          #     nix develop
+          #
+          # Use this shell for developing your app.
+          default = pkgs.mkShell {
+            inputsFrom = [ pkgs.myapp ];
+          };
 
-        # The default package when a specific package name isn't specified.
-        defaultPackage = packages.app;
+          # Shell for poetry.
+          #
+          #     nix develop .#poetry
+          #
+          # Use this shell for changes to pyproject.toml and poetry.lock.
+          poetry = pkgs.mkShell {
+            packages = [ pkgs.poetry ];
+          };
+        };
+        legacyPackages = pkgs;
       }
     );
 }

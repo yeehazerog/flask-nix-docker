@@ -1,18 +1,18 @@
 [tool.poetry]
 name = "flask-example"
 version = "0.1.0"
-description = ""
-authors = ["Mitchell Hashimoto <mitchell.hashimoto@gmail.com>"]
+description = "Based on the flask/nix/docker example by Mitchell Hashimoto <mitchell.hashimoto@gmail.com>"
+authors = ["yeehaZeroG"]
 readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
-Flask = "^2.2.3"
+python = "^3.13"
+Flask = "*"
 
 [tool.poetry.scripts]
 app = 'src.app:main'
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.8.4"]
 build-backend = "poetry.core.masonry.api"
