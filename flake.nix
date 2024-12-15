@@ -5,7 +5,8 @@
     # https://github.com/NixOS/nixpkgs to see latest release
     flake-utils.url = "github:numtide/flake-utils";
     #nixpkgs.url = "github:nixos/nixpkgs/release-24.11";
-    nixpkgs.url = "github:nixos/nixpkgs/trunk-combined";
+    #nixpkgs.url = "github:nixos/nixpkgs/trunk-combined"; # not working
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
